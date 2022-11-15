@@ -1,0 +1,302 @@
+\documentclass[10pt]{article}
+
+\usepackage[urlcolor=blue, colorlinks=true]{hyperref}
+\usepackage{forest}
+\usepackage{tikz}
+\usepackage{tabularx}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem*{lemma*}{Lemma}
+\newtheorem*{remark*}{Remark}
+\newtheorem{remark}{Remark}
+\newtheorem{sublemma}{Lemma}[lemma]
+\newcommand{\FFamily}{\mathbb{F}^{(\leq d)}_p[X]}
+\newcommand{\FField}{\mathbb{F}_p}
+\newcommand{\HL}[1]{\textcolor{red}{#1}}
+
+\begin{document}
+\section*{ZK notes}
+\begin{description}
+    \item Some keynotes made while learning about ZK, SNARK, STARK and ZK-VM.
+    \item Lectures: \href{https://www.youtube.com/playlist?
+        list=PLj80z0cJm8QErn3akRcqvxUsyXWC81OGq}{Youtube Playlist}
+\end{description}
+
+\section{SNARK}
+SNARK is not necessary ZK and can be quite different from STARK and ZK-VM. But
+it should be a good starting ground to understand some basic concept.
+
+\subsection{Polynomial Commitment Scheme (PCS)}
+A PCS is a functional commitment for the family $\mathcal{F} \in \FFamily$.
+A prover commits to univariate polynomial $f$ in $\FFamily$ and can later prove
+to the verifier that $v = f(u)$ for public $u, v \in \FField$.
+
+Some examples PCS (here we focus on KZG'10):
+\begin{enumerate}
+    \item Bulletproof (elliptic curves, but verification is $O(d)$)
+    \item KZG'10 (trusted setup, bilinear), Dory'20 (bilinear)
+    \item Dark'20 (groups of unknown order)
+    \item Hash (FRI)
+\end{enumerate}
+
+\subsection{KZG'10}
+Set cyclic group $\mathbb{G} = \{0, G, 2 \cdot G, 3 \cdot G, \ldots, (p-1) \cdot
+G\}$ of order $p$.
+
+\subsubsection*{Setup algorithm}
+\begin{enumerate}
+    \item Sample random $\alpha \in \FField$.
+    \item $pp = (H_0 = G, H_1 = \alpha \cdot G, \ldots, H_d = \alpha^d \cdot G)
+        \in \mathbb{G}^{d+1}$.
+    \item \textbf{delete $\alpha$} (i.e., A trusted setup)
+\end{enumerate}
+
+\subsubsection*{Commitment}
+In short: $commit(pp, f) \rightarrow com_{f}$, where $com_{f} = f(\alpha) \cdot G \in
+\mathbb{G}$.\footnote{This is not a hiding commitment} \\
+
+\begin{remark*}
+    As a result, the committed message is extremely short (an
+    element $G$) regardless how large our polynomial is.
+\end{remark*}
+
+But $\alpha$ is deleted during trusted setup, how does prover compute
+$f(\alpha)$?\\
+Observe:
+\begin{description}
+    \item $\Rightarrow f(X) = f_0 + f_1X + \ldots + f_dX^d $
+    \item $\Rightarrow f(\alpha) \cdot G = f_0 \cdot G + f_1 \cdot \alpha \cdot G 
+        + \ldots + f_d \cdot \alpha^d \cdot G $
+    \item $\Rightarrow f(\alpha) \cdot G = f_0 \cdot H_0 + f_1 \cdot H_1 + \ldots + f_d
+        \cdot H_d $
+\end{description}
+
+\subsubsection*{Evaluation}
+How to prove $f(u) = v$?\\ 
+
+First Observe:
+\begin{enumerate}
+\item If $f(u) = v \Longleftrightarrow u$ is a root of polynomial
+    $\hat{f}(X) = f(X) - v$.
+\item If $u$ is a root of $\hat{f}(X) \Longleftrightarrow \hat{f}(X)$  is divisible
+    by $(x - u)$.
+\item $f(u) = v \Longleftrightarrow \exists q \in \FFamily$ s.t. $q(X)(X-u)=f(X)-v$
+    
+\end{enumerate}
+
+\begin{description}
+    \item The prover then computes quotient polynomial $q(X) = (f(X) - v) / (X - u)$
+        and sends $com_q$ to verifier.
+    \item The verifier accepts if $(\alpha - u) \cdot com_q = com_f - v \cdot G$.
+\end{description}
+
+LHS:
+\begin{description}
+    \item $\Rightarrow (\alpha - u) \cdot com_q$
+    \item $\Rightarrow (\alpha - u) \cdot (q_0 H_0 + q_1 H_1 + \ldots + q_d H_d)$
+    \item $\Rightarrow (\alpha - u) \cdot (q_0 G + q_1 \alpha G + \ldots + q_d \alpha^d G)$
+    \item $\Rightarrow commit(pp, (X-u)q(X))$
+\end{description}
+RHS is similar. \footnote{Important: verifier does not actually need to know
+about $\alpha$. The \emph{pairing} is used here to allow verifier to compute
+$(\alpha - u) * com_q$ with only $G$ and $H_1$}
+\begin{remark*}
+    The verification work only take constant time, regardless of the degree of
+    the polynomial.
+\end{remark*}
+
+\subsubsection*{Extension}
+\begin{enumerate}
+    \item KZG for k-variant polynomial (PST'13)
+    \item Batch proofs: prove a batch of commitments in a single step.
+\end{enumerate}
+
+
+\subsection{A Useful Observation}
+A Useful and important observation.
+
+For $0 \neq f \in \FFamily$.
+Let $r$ be a random point $r \leftarrow \FField$, the probability 
+$pr[f(r) = 0] = d/p$.\footnote{Given $f$ has at most $d$ roots and $p$ elements}
+
+For large enough $p$ and reasonable $d$, e.g., $p \approx 2^{256}$ and $d \leq
+2^{40}$, $d/p$ is negligible.
+
+\begin{lemma}\label{observation1}
+    for $r \leftarrow \FField$, if $f(r) = 0$, we can conclude $f$ is
+    identically zero w.h.p.\footnote{Also holds for multivariate polynomial,
+    see SZDL lemma.}
+\end{lemma}
+
+Further more, with the same settings. \\
+\begin{lemma}\label{observation2}
+Let $f, g \in \FFamily$. For $r \leftarrow \FField$, if
+$f(r) = g(r)$ then $f = g$.
+\end{lemma}
+\begin{description}
+    \item $\Rightarrow f(r) - g(r) = 0$
+    \item $\Rightarrow$ Let $h = f - g$, from Lemma~\ref{observation1}, $h$ is
+        identical zero w.h.p.
+    \item $\Rightarrow f = g$, w.h.p
+\end{description}
+
+\subsection{Zero Test On H}
+One of the (and the simplest) poly-IOP tasks that the verifier would like the
+prover to do.
+
+\begin{description}
+\item Let $\omega \in \FField$ be a primitive $k$-th root of unity (such
+    that $\omega^{k} = 1$ and  $\omega^n \neq 1$ for $n < k$).
+\item Set $H = \{1, \omega, \omega^2, \ldots, \omega^{k-1}\} \in
+    \FField$. 
+\item Let polynomial $f \in \FFamily$.
+\end{description}
+
+A zero test is a test from verifier to prover to prove that: \textbf{$f$ is
+identically zero on set $H$.}
+
+\begin{lemma}\label{zero-test}
+    $f$ is zero on $H$ iff $f(X)$ is divisible by $X^k - 1$.
+\end{lemma}
+\begin{enumerate}
+    \item The prover can compute the quotient polynomial $q(X) = f(X) /
+        (X^k - 1)$. and send the commitment of $q$ to the verifier.
+    \item The verifier then choose random $r \in \FField$ and ask prover
+        to open $f(X)$ and $q(X)$ at r.
+    \item The verifier then accepts the test if $f(r) = q(r) \cdot (r^k - 1)$
+\end{enumerate}
+As mentioned in Lemma~\ref{observation2}, two polynomials that agree on a random point $r$
+has a high probability that the two polynomials are identical. 
+Therefore, the above implies $f(X) = q(X)(X^k - 1)$. This proves $f(X)$ is
+indeed divisible by $X^k - 1$, hence from Lemma~\ref{zero-test}, $f$ is
+identical on $H$.
+
+\subsection{Interpolate Polynomial}
+Plonk.
+
+\subsubsection{Compile a circuit into a computation trace}
+\begin{minipage}{.5\textwidth}
+\begin{forest}
+[$(x_1 + x_2)(x_2 + w_1)$
+    [Gate2: $\times$, edge={<-}, edge label={node[midway,left]{77}}
+    [Gate0: $+$, edge={<-}, edge label={node[midway,left]{11}}
+        [$x_1$, edge={<-}, edge label={node[midway,left]{5}}]
+        [$x_2$, edge={<-}, name=n1, edge label={node[midway,right]{6}}]
+    ]
+    [Gate1: $+$, edge={<-},name=n2, edge label={node[midway,right]{7}}
+        [$w_1$, edge={<-}, edge label={node[midway,right]{1}}]
+    ]
+    ]
+]
+\draw[->] (n1) -- node[midway,right]{6} (n2);
+\end{forest}
+\end{minipage}
+\begin{minipage}{.5\textwidth}
+\begin{tabular}{l|r|r|r}
+    inputs: & 5 & 6 & 1 \\
+    \hline
+    & left & right & out \\
+    \hline
+    Gate0 & 5 & 6 & 11 \\
+    Gate1 & 6 & 1 & 7 \\
+    Gate2 & 11 & 7 & 77 \\
+    \hline
+\end{tabular}
+\end{minipage}\\
+\subsubsection{Encoding the trace as polynomial}
+\begin{description}
+    \item $C \leftarrow$: total \# of gates
+    \item $I \leftarrow |I_x| + |I_w|$: \# inputs to circuit
+    \item $d \leftarrow 3|C| + |I| = 12$ for our example. ($3$ since each gate has $3$ inputs).
+    \item $H \leftarrow \{1, \omega, \ldots, \omega^{(d-1)}\}$ 
+\end{description}
+
+The goal here is to interpolate a polynomial $P$ that encodes the computation
+trace. To achieve that, we want to
+\begin{enumerate}
+    \item let $P$ encodes all inputs, such that $P(\omega^{-j}) =$ inputs \# j
+        for all $j = 1, \ldots, |I|$.
+    \item let $P$ encodes all wires, such that $\forall l = 0, \ldots, |C|-1$:
+        \begin{enumerate}
+            \item $P(\omega^{3l}) = $ left input of gate \# $l$.
+            \item $P(\omega^{3l+1}) = $ right input of gate \# $l$.
+            \item $P(\omega^{3l+2}) = $ output of gate \# $l$.
+        \end{enumerate}
+\end{enumerate}
+This results in $12$ constraints for $P$, which means there exists a $P$ with
+degree at most $11$ that satisfies all the constraints. \HL{Prover can then 
+constructs $P$ using Fast Fourier Transform in time $O(d\log d)$, which
+I don't know how yet.}
+
+\subsubsection{Prove that encoding is correct}
+There are four things to prove.\\
+
+\textbf{Inputs are correctly encoded.}\\
+Both prover and verifier takes input $x$ and interpolate a polynomial $v(X) \in
+\FFamily$ that satisfies $\forall j = 1, \ldots, |I_x|: v(\omega^{-j}) = $input \#j.
+
+\HL{From the slides, it says construction takes time linear to the size of $x$, shouldn't
+it still be using FFT and the time is actually $O(n \log n)$?}. 
+
+Then prover just proves that $P(y) - v(y) = 0\ \ \forall y \in H_{inp}$ where
+$H_{inp}$ is all the input points, i.e., $\{\omega^{-1}, \ldots,
+\omega^{-|I_x|}\}$. This can be done using zero-test.
+
+\textbf{Gates evaluations are correctly encoded.}\\
+Interpolate selector polynomial $S(X) \in \FFamily$ such that $\forall l =
+0,\ldots, |C| - 1$:
+\begin{enumerate}
+    \item $S(\omega^{3l}) = 1$ if gate $l$ is addition
+    \item $S(\omega^{3l}) = 0$ if gate $l$ is multiplication
+\end{enumerate}
+Observe $\forall y \in H_{gates} = \{1, \omega^{3}, \omega^{6}, \ldots,
+\omega^{3(|C|-1)}\}$:
+$$
+S(y) \cdot [P(y) + P(\omega y)] + (1 - S(y))\cdot P(y)\cdot P(\omega y) =
+P(\omega^{2}y)
+$$
+When $S(y) = 1$, which means a gate is addition gate, and $[P(y) + P(\omega y)]$
+encodes the two inputs of that gate, which equals to $P(\omega^{2}y)$ (where $\omega^2y$ encodes the output of the circuit). 
+At the same time, since the gate is addition, the right operand $((1 -
+S(y))\cdot \ldots)$ must evaluated to zero. The same goes for when $S(y) = 0$,
+i.e., multiplication gate.
+
+Overall, another zero-test on $H_{gates}$.
+
+\textbf{Wirings are encoded correctly.}\\
+For example, the input $6$ flows to right input of Gate0 and left input of
+Gate1, we need to prove that does data flows (wiring) are encoded correctly.
+For our examples, the equivalent constraints are:
+$$
+  \begin{cases}
+    P(\omega^{-2}) = P(\omega^1) = P(\omega^3) \\
+    P(\omega^{-1}) = P(\omega^0) \\
+    P(\omega^{2}) = P(\omega^6) \\
+    P(\omega^{3}) = P(\omega^4) \\
+  \end{cases}       
+$$
+To do so, define a rotation polynomial $W : H \rightarrow H$ such that:
+$$
+  \begin{cases}
+      W(\omega^{-2}, \omega^{1}, \omega^{3}) = (\omega^{3}, \omega^{-2}, \omega^{1})\\
+      W(\omega^{-1}, \omega^{0}) = (\omega^{0}, \omega^{1}) \\
+      \ldots \\
+  \end{cases}       
+$$
+\begin{lemma}
+    $\forall y \in H: P(y) = P(W(y)) \Rightarrow $ wiring constraints are
+    satisfied.
+\end{lemma}
+\HL{Since W has degree of $d$ and P has degree of $d$, the verification can takes
+quadratic time. The trick here is to use prod-check (another IOP check) to
+reduce it to linear complexity. Not sure how to yet, another time. :P}
+
+\textbf{Outputs are encoded correctly (is zero).}\\
+Just let prover to open $P$ at the output of the final gate.
+
+\section{STARK}
+
+\end{document}
