@@ -298,5 +298,55 @@ reduce it to linear complexity. Not sure how to yet, another time. :P}
 Just let prover to open $P$ at the output of the final gate.
 
 \section{STARK}
+This follows the tutorial at
+\href{https://aszepieniec.github.io/stark-anatomy}{here}
+
+
+\subsection{Extended Euclidean Algorithm}
+Refresh myself with the Extended Euclidean algorithm...
+
+Extended Euclidean algorithm is an extension of the Euclidean algorithm, in
+addition to computing the greatest common divisor of two integer $a$ and $b$,
+it also gives $x$ and $y$ such that:
+$$
+ax + by = gcd(a, b)
+$$
+
+Recall the standard Euclidean algorithm in recursive form: $gcd(a, b) = gcd(b,
+a \mod b)$, stops at $gcd(r, 0)$ and returns $r$. 
+
+The Extended Euclidean Algorithm works the same, but keeps the quotient at
+each iterations.
+$$
+\begin{aligned}
+    r_0 = a & \ \  s_0 = 1 & t_0 = 0\\
+    r_1 = b & \ \  s_1 = 0 & t_1 = 1\\
+            & \ldots &  \\
+           & r_i = r_{i-2} - q_{i-1} r_{i-1} \\
+           & s_i = s_{i-2} - q_{i-1} s_{i-1}  \\
+           & t_i = t_{i-2} - q_{i-1} t_{i-1}\\
+\end{aligned}
+$$
+
+The EEA is useful as it defines the inverse of an element under $\FField$.
+Give an element $x \in \FField$, the inverse of $x$ is therefore $a$:
+\begin{description}
+    \item $\Rightarrow gcd(x, p) = 1$
+    \item $\Rightarrow ax + bp \equiv 1 \mod p$
+    \item $\Rightarrow ax \equiv 1 \mod p$
+\end{description}
+
+\subsection{Generator}
+\HL{Not sure yet how generator is applied in SNARK or how it is produced ---
+How to produce a generator of multiplicative group of order prime?}
+
+\subsection{Polynomial Implementation}
+Just some notes on the notations here. 
+\begin{description}
+    \item \emph{leading coefficient} is the coefficient of the highest degree. It is
+confusing as I interpreted it as the first coefficient (it is the last one).
+    \item The zerofier takes a set of domain $D$ where $\forall x \in D$, the
+        resulting polynomial $f(x) = 0$.
+\end{description}
 
 \end{document}
