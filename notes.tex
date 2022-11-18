@@ -16,6 +16,7 @@
 \newtheorem{sublemma}{Lemma}[lemma]
 \newcommand{\FFamily}{\mathbb{F}^{(\leq d)}_p[X]}
 \newcommand{\FField}{\mathbb{F}_p}
+\newcommand{\MyOmega}{e^{2\pi ik/n}}
 \newcommand{\HL}[1]{\textcolor{red}{#1}}
 
 \begin{document}
@@ -381,8 +382,164 @@ Just some notes on the notations here.
 \begin{description}
     \item \emph{leading coefficient} is the coefficient of the highest degree. It is
 confusing as I interpreted it as the first coefficient (it is the last one).
-    \item The zerofier takes a set of domain $D$ where $\forall x \in D$, the
-        resulting polynomial $f(x) = 0$.
+    \item The \emph{zerofier} takes a set of domain $D$ where $\forall x \in D$, produce the
+        result polynomial $f(x) = 0$.
 \end{description}
+
+\subsection{FRI}
+\emph{Fast Reed-Solomon IOP of Proximity}.
+
+FRI is a protocol between a prover and a verifier, which establishes that a
+given codeword belongs to a polynomial of low degree – low meaning at most $p$
+times the length of the codeword. 
+
+\subsection{Fast Fourier Transform \& Polynomials}
+Consider some simple polynomial algorithms.
+\begin{itemize}
+    \item Multiplying two polynomial of coefficient representation. $O(n^2)$.
+    \item Coefficient representation to point-value representation. $O(n^2)$ as
+        you need to evaluate $n+1$ points for a $n$-degree polynomial.
+    \item Lagrange. $O(n^2)$ as mentioned in previous section.
+\end{itemize}
+
+With Fast Fourier Transform, it is possible to perform above
+algorithms in $O(n\log n)$.
+
+\subsection{Point-value Representation and Polynomial Multiplication}
+Consider two polynomials of degree of $n-1$:
+\[
+\begin{aligned}
+    A(X) &= a_0 + a_1x + a_2x^2 + \ldots + a_{n-1}x^{n-1} \\
+    B(X) &= b_0 + b_1x + b_2x^2 + \ldots + b_{n-1}x^{n-1} \\
+\end{aligned}
+\]
+
+Each polynomial can be represented by a list of coefficients of size $n$, $a =
+(a_0, a_1, \ldots, a_{n-1})$. The multiplication is represented by $a
+* b$, which takes $O(n^2)$.
+
+Another way of representing a polynomial is through the idea that a polynomial
+of degree $n-1$ is uniquely defined by $n+1$ points. So
+\[
+    A(X) = \{(x_0, A(x_0)), (x_1, A(x_1)), \ldots, (x_{n-1}, A(x_{n-1}))\}
+\]
+
+Multiplication of two polynomial can then be defined by multiplication of those
+uniquely defined points, $C(X) = A(X)B(X)$:
+\[
+    C(X) = \{(x_0, A(x_0)B(x_0)), (x_1, A(x_1)B(x_1)), \ldots, (x_{n-1}, A(x_{n-1})B(x_{n-1}))\}
+\]
+The only catch here is that $C(X)$ is a polynomial of degree $2n-2$, so we
+actually need to find more points ($2n-1$) on $A$ and $B$ in order to uniquely define $C$.
+However, the complexity of the multiplication drop from $O(n^2)$ to $O(n)$.
+
+\subsubsection{Goals}
+Obviously if we simply choosing arbitrary $2n$ points on the polynomial then
+this will take us $O(n)$ time for each point and ends up with $O(n^2)$
+complexity again. The remark here is that by choosing a specific set of points
+with Fast Fourier Transform, we can find the point-value representation in
+just $O(n\log n)$.
+
+\subsubsection{Complex Root of Unity}
+A number $z \in \mathbb{C}$ is an \emph{$n^{th}$ root of unity if $z^n = 1$}.
+The pricipal $n$th root of unity is $\omega_n = e^{\frac{2\pi i}{n}}$.
+The intution here is that $e^{\frac{2\pi i}{n}}$ is a function that rotates
+as a cycle (through $i$) and has radius of $1$ (through $e^{2\pi}$), $n$ then
+defines a radians of the rotation. The magic value $\omega_n^n$ then defines
+each full rotation.
+
+\begin{lemma}\label{cancel-lemma}
+    For integer $n\geq 0$, $k \geq 0$, $d \geq 0$, $\omega^{dk}_{dn} = \omega^{k}_{n}$.
+\end{lemma}
+$$\omega^{dk}_{dn} = (e^{\frac{2\pi i}{dn}})^{dk} = (e^{\frac{2dk\pi i}{dn}}) = 
+(e^{\frac{2k\pi i}{n}}) = \omega_n^{k}
+$$
+
+\begin{lemma}\label{halving-lemma}
+    If $n$ is even, then squares of the $n$th complex unity root is equal to
+    the $n/2$ of the $n/2$th complex unity root.
+\end{lemma}
+$$
+\omega^2_{n} = (e^{\frac{4\pi i}{n}}) = (e^{\frac{2\pi i}{n/2}}) = \omega_{\frac{n}{2}}
+$$
+This extends to the $k$th power of the $n$th complex unity root:
+$$
+(\omega^k_{n})^2 = (\omega^{2k}_{n}) = \omega^{k}_{\frac{n}{2}}
+$$
+\begin{lemma}\label{summation-lemma}
+    If $n \geq 1$ and $k$ is not divisible by $n$:
+    $$
+    \sum_{j=0}^{n-1}(\omega^{k}_n)^j = 0
+    $$
+Proof:
+\end{lemma}
+\[
+    \sum_{j=0}^{n-1}(\omega^{k}_n)^j = \frac{1 - \omega^{kn}_n}{1 -\omega^{k}_n}
+    = \frac{1 - (\omega^{n}_n)^k}{1 -\omega^{k}_n}
+    = \frac{1 - 1^k}{1 -\omega^{k}_n}
+    = 0
+\]
+This is true as $k$ is not divisible by $n$ hence $\omega^{k}_n \neq 1$.
+
+\subsubsection{Discrete Fourier Transform}
+Let $a = (a_0, a_1, \ldots, a_{n-1})$ be a coefficient representation of
+polynomial $A$, define $\hat{a} = (\hat{a}_0, \hat{a}_1, \ldots,
+\hat{a}_{n-1})$ where:
+\[
+    \hat{a}_k = \sum^{n-1}_{j=0}{a_j\omega^{kj}_n} 
+\]
+
+The remark is shown by considering value of polynomial $A$ at point
+$\omega^k_n$.
+\[
+    A(\omega^k_n) = \sum^{n-1}_{j=0}{a_j\omega^{kj}_n} = \hat{a}_k.
+\]
+
+Each $A(\omega^k_n)$ still takes $O(n)$ to compute, there are still a lot of missing pieces, wait...
+
+\subsubsection{Fast Fourier Transform}
+FFT is an efficient algorithm of computing the above sequence using a
+divide-and-conquer approach.
+
+Assuming n is a power of $2$, in addition to $A(X)$, we define two other
+polynomials:
+\[
+\begin{aligned}
+    A_e(X) &= a_0 + a_2x + a_4x^2 + \ldots + a_{n-2}x^{\frac{n-2}{2}} \\
+    A_o(X) &= a_1 + a_3x^1 + a_5x^{2} \ldots + a_{n-1}x^{\frac{n-2}{2}} \\
+\end{aligned}
+\]
+We can then represent $A$ by:
+\[
+    A(X) = A_e(X^2) + XA_o(X^2)
+\]
+The problem of evaluating $A$ at $(\omega^0_n, \omega^1_n, \ldots, \omega^{n-1}_n)$
+is reduced to:
+\begin{enumerate}
+    \item Compute $A_e$ and $A_o$ at $((\omega^0_n)^2, (\omega^1_n)^2, \ldots,
+        (\omega^{n-1}_n)^2)$
+    \item Combine the result
+\end{enumerate}
+Wait, but $A_e$ and $A_0$ only have degree $n/2$ and cannot be used to
+evaluated the full sequence. But consider $d \leq \frac{n}{2}$:
+\footnote{\HL{The slides specifically refers to halving
+lemma~\ref{halving-lemma}, but I don't see how the lemma is necessary here to
+get the conclusion.}}
+\[
+    (\omega^{d}_n)^2 = \omega^{2d}_{n}\omega^{n}_{n} = \omega^{2d+n}_{n} =
+    (\omega^{d + \frac{n}{2}}_n)^2
+\]
+Therefore, calculating the first halves of the sequence give us the result in the second
+halves. This also explains in the earlier section why only providing $n$ points
+is enough to calculate polynomial $C$ of degree $2n-2$.
+
+\subsubsection{Inverse of FFT}
+\HL{Is it needed? TBD...}
+
+\subsubsection{Q}
+It seems like as long as $\omega_n$ statistifes that only $\omega^n_n = 1$ we
+can get the same conclusion, not sure why the primitive root is used here (as
+an example?). And I don't get how halving lemma is necessary to get the
+final conclusion, it just uses basic exponent rules.
 
 \end{document}
