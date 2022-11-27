@@ -539,7 +539,231 @@ is enough to calculate polynomial $C$ of degree $2n-2$.
 \subsubsection{Q}
 It seems like as long as $\omega_n$ statistifes that only $\omega^n_n = 1$ we
 can get the same conclusion, not sure why the primitive root is used here (as
-an example?). And I don't get how halving lemma is necessary to get the
-final conclusion, it just uses basic exponent rules.
+an example?). As well as some other lemmas... E.g., I don't get why halving
+lemma is necessary to get the final conclusion, it just uses basic exponent
+rules.
+
+\section{Finite Fields}
+Basic concept of finite field, for future references.
+
+\subsection{Groups}
+A group is a set of elements $G = \{a, b, c, \ldots\}$ and an operator
+$\oplus$ such that
+\begin{enumerate}
+    \item Closure: $\forall a, b \in G: a \oplus b \in G$
+    \item Associative $\forall a, b, c \in G: (a \oplus b) \oplus c = a \oplus
+        (b \oplus c)\in G$
+    \item Identity: $\exists 0 \in G, \forall a \in G: a \oplus 0 = a$
+    \item Inverse: $\forall a \in G, \exists b \in G: a \oplus b = 0$, simply
+        denote $b = -a$.
+    \item Permutation: $\forall a \in G: a \oplus G = \{a \oplus b\ \vert\ b \in G\} =
+        G$, in another word, this gives us a different permutation of $G$.
+\end{enumerate}
+In addition, if $\forall a, b \in G: a \oplus b = b \oplus a$, $G$ is called
+\emph{abelian}.
+
+Note: Often, the operation is called multiplication, presented by $\times$, and
+identity is written as $1$, inverse is written with $a^{-1}$.
+
+\subsection{Cyclic Groups}
+A \emph{finite cyclic group} is a finite group $G$ with a \emph{generator}
+element $g$ such that $G = \{g, g \oplus g, g \oplus g \oplus g, \ldots\}$
+
+Since $g$ generates $G$, this must includes the identity element $0$. 
+Therefore, we must have $ig = 0$ for some $i$. Let $k$ be the smallest $i$
+such that $kg = 0$, we must have $ng \neq 0$ for $1 \leq n \leq k - 1$.
+For each element $ng$ with $1 \leq n \leq k - 1$, we have:
+\begin{description}
+    \item $kg \neq 0$
+    \item $\Longrightarrow kg + ng \neq ng$
+    \item $\Longrightarrow (k + n)g \neq ng$
+\end{description}
+Therefore, all elements in $G$ are different.
+
+\subsection{Subgroups}
+A subgroup $S$ of a group $G$ is a subset of $G$ such that $\forall a,b \in S:
+a \oplus b \in S$. Therefore, the subgroup must contain the identity element in
+$G$ and all the inverse of each element in $S$. A subgroup is also a group.
+If $G$ is abelian, then the subgroup is abelian. The inverse is not necessary
+true.
+
+\subsection{\HL{TBD}}
+
+\section{Elliptic Curve}
+Slowly connecting elliptic curve, pairing and KZG commitments.
+It is hard to plot elliptic curve in latex, so figure would be omitted here.
+I might add figure in later editing.
+First part followed from
+\href{https://andrea.corbellini.name/2015/05/17/elliptic-curve-cryptography-a-gentle-introduction/}{here}.
+
+\subsection{Group Law for Elliptic Curve}
+We can define a group over elliptic curve.
+\begin{itemize}
+    \item the elements of the group are the points of an elliptic curve
+    \item the identity element is the point at infinity 0
+    \item the inverse of a point is the one symmetric about the x-axis
+    \item given three aligned points, $P, Q, R$, their sum is $P + Q + R = 0$.
+\end{itemize}
+Immediately, we have $P + (Q + R) = (P + Q) + R = R + (P + Q) = 0$, both
+associative and commutative rules are satisfied, hence an \emph{abelian} group.
+
+\subsection{Geometric Addition}
+Given this is an abelian group, we have $P + Q = -R$. So we can draw a line
+across $P, Q, R$, the symmetric point of $R$ gives us the result $-R$.
+Consider some corner cases:
+\begin{enumerate}
+    \item What if $P = 0$ or $Q = 0$? Given $0$ is defined as identity
+        element, we have $0 + P = P$.
+    \item What if $P = -Q$? I.e., the line is vertical and only pass two
+        points. Given the definition of inverse, we have $P + Q = P + (-P) =
+        0$.
+    \item What if $P = Q$? Imagine a point $Q'$ move toward $P$, as $Q' \approx
+        P$ , we have a line that is tangent to the curve, hence we say $P + P =
+        -R$, where $R$ is the point that intersect with the tangent line.  
+    \item What if $P \neq Q$ but there is no third point and the line is not
+        vertical? This is similar to the previous point, where line defined by
+        $P, Q$ is tangent to the curve. Assuming $P$ is the tangent point, we
+        then have $P + P = -Q$.
+\end{enumerate}
+
+\subsection{Algebraic Addition}
+This is entirely by me, not sure if my conclusion is right (audit it please),
+the details are omitted in the origin post.
+
+Consider two points $P = (x_P, y_P), Q = (x_Q, y_Q)$, how to find the third
+point $R = (x_R, y_R)$ such that three are points aligned (assuming exists).
+
+We know line pass three points have the form:
+\[
+    y = y_Q + m(x - x_Q)
+\]
+or:
+\[
+    y = y_P + m(x - x_P)
+\]
+Hence $y_R = y_Q + m(x_R - x_Q)$. Next finding $x_R$. Given curve of form $y^2 =
+x^3 + Ax + B$, we have:
+\[
+    x^3 + Ax + B - (m(x - x_Q) + y_Q)^2 = 0
+\]
+for $x$ taking $x_Q,x_P$ and $x_R$. Expanding it:
+\begin{description}
+    \item $\Longrightarrow x^3 + Ax + B - (mx - mx_Q + y_Q)(mx - mx_Q + y_Q)$
+    \item $\Longrightarrow x^3 + Ax + B - m^2x^2 + m^2xx_Q - mxy_Q + m^2xx_Q
+        - m^2{x^2_Q} + mx_Qy_Q - mxy_Q + mx_Qy_Q - {y^2_Q}$
+    \item $\Longrightarrow x^3 + (-m^2)x^2 + (A + 2m^2x_Q - 2my_Q)x + (B -
+        m^2x^2_Q + mx_Qy_Q - mx_Qy_Q - y^2_Q)$
+\end{description}
+Looks complicated, but from \emph{Vieta's formulas}, we have the sum of roots:
+\[
+\sum_{r_i} = -\frac{a_{n-1}}{a_n}
+\]
+where $a_n$ is the $n^{th}$ coefficient. So $x_Q + x_P + x_R = m^2$, and we have
+\[
+    x_R = m^2 - x_Q - x_P
+\]
+with slop $m$
+\[
+    m = \frac{y_P - y_Q}{x_P - x_Q}
+\]
+
+Note, this also works on tangency point ($Q = P$). It's just that the slop $m$ needs to
+taken by first derivatives:
+\[
+    m = \frac{3x^2_P+a}{2y_P}
+\]
+
+\subsection{Scalar Multiplication}
+We define scalar multiplication $nP$:
+\[
+    nP = P + P + P \ldots P
+\]
+There exists simple logarithm algorithm for computing $nP$.
+
+\subsection{Elliptic Curve over $\FField$}
+When define over $\FField$, we have a set of points:
+\[
+    \{(x, y) \in \FField^2\ \vert\ y^2 \equiv x^3 + ax + b \mod p\} \cup \{0\}
+\]
+
+The \emph{order} of a group is the cardinality of the set of points. This can
+be done using the \emph{Schoof's Algorithm}.
+
+\HL{The core of the discrete logarithm is that: given $P$ and $Q$, it is "hard" to find $k$ such that $P = Qk$}.
+\subsubsection{Point addition and algebraic sum}
+The definition is almost the same, except we define three points are aligned if
+there exists line $y \equiv ax + b \mod p$ that pass through all points. If you
+can imagine, this line would wrap around the panels.
+\begin{itemize}
+    \item $Q + 0 = 0 + Q$.
+    \item Given $Q = (x_Q, y_Q)$, $-Q = (x_Q, -y_Q \mod p)$
+    \item $P + (-P) = 0$
+\end{itemize}
+
+The equations for calculating the third points given two points is exactly the
+same, except taking the module of $p$.
+\begin{itemize}
+    \item $x_R = m^2 - x_P - x_Q \mod p$
+    \item $y_R = y_P + m(x_R - x_P) \mod p$
+    \item $m = (y_P - y_Q)(x_P - x_Q)^{-1} \mod p$ if $P \neq Q \mod p$
+    \item otherwise, $m = (3x^2_P + a)(2y_P)^{-1} \mod p$
+\end{itemize}
+
+\subsubsection{Cyclic Subgroup}
+Taking a point $P$ from the curve, the set of multiplicative of $P$ is closed
+and forms a cyclic subgroup. $P$ is also called a \emph{generator} or a \emph{base}.
+The order of such group (I.e., the order of $P$) is defined by the smallest
+positive integer $n$ such that $nP = 0$, so brute force takes at least $O(n)$.
+However, from \emph{Lagrange theorem}, which state that the order of subgroup must
+be a divisor of the parent group.
+Therefore, we can improve the algorithm: 
+\begin{enumerate}
+    \item Calculate order of the curve $N$ by Schoof's algorithm.
+    \item Find all divisor of $N$
+    \item For all divisor, try $nP$, the smallest $n$ such that $nP=0$ is the
+        order of $P$.
+\end{enumerate}
+
+\subsubsection{Finding base point}
+In some applications, we want to find a group of higher order. So instead of
+starting from a base point $P$, we would start by finding all divisor of $N$, taking a
+high divisor ($n$) to be the subgroup order, and work in reverse to find the generator
+of that subgroup.
+
+Note Lagrange theorem implies $h = N/n$ is always an integer (since $n$ must be
+a divisor). The number $h$ is called \emph{cofactor}.
+
+Consider for any point $P$ on the curve, we must have $NP = 0$, hence $n(hP) =
+0$.
+Now suppose $n$ is a prime number:
+\begin{enumerate}
+    \item Calculate order $N$ of the elliptic curve.
+    \item Choose a $n$ we want to use as our subgroup order, but $n$ has to be a prime number.
+    \item Compute cofactor $h$ by $N / n$.
+    \item Choose a random point $P$ on the curve.
+    \item Compute $G = hP$, if $G = 0$, go back to step $4$, otherwise, we
+        have found the generator.
+\end{enumerate}
+The reason of why $n$ must be prime is because: if it is not, $P$ could have an
+order that is actually a divisor of $n$.
+
+\HL{This is interesting, I wonder whether special curve needs to be crafted so
+that finding $P$ would not be so hard (a group with prime order or order with
+only few divisor?).}
+
+\subsubsection{Encryption with ECDH}
+Since encryption is not our main concern, I'll just use an example to quickly
+finish off this chapter.
+
+A \emph{private key} is $d$, which is a random integer taken from the divisor of the
+subgroup order $N$.
+A \emph{public key} is the point $H=dG$, where $G$ is the base of the subgroup.
+
+\begin{enumerate}
+    \item Alice and Bob exchange their public key $H_A = d_AG$ and $H_B = d_BG$
+        ($G$ can be shared, public information).
+    \item Alice calculate $S_A = d_AH_B$ and Bob calculates $S_B = d_BH_A$, you
+        can see $S_A = d_A(d_B)G = d_B(d_A)G = S_B$
+\end{enumerate}
 
 \end{document}
