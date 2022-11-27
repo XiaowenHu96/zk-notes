@@ -766,4 +766,74 @@ A \emph{public key} is the point $H=dG$, where $G$ is the base of the subgroup.
         can see $S_A = d_A(d_B)G = d_B(d_A)G = S_B$
 \end{enumerate}
 
+\section{Connecting Pairing With KZG}
+\HL{This section still missing tons of detail}
+\begin{enumerate}
+    \item \href{https://hackmd.io/@gnark/kzg-bls24}{Yet another curve, but THE
+            curve for your KZG!}
+    \item
+            \href{https://dankradfeist.de/ethereum/2020/06/16/kate-polynomial-commitments.html}{KZG
+            polynomial commitments}
+        \item \href{https://vitalik.ca/general/2017/01/14/exploring_ecp.html}{Exploring Elliptic Curve Pairings }
+        \item \href{https://hackmd.io/@benjaminion/bls12-381}{BLS12-381 For The Rest Of Us}
+\end{enumerate}
+
+\subsection{Pairing}
+A pairing is a bilinear map:
+\[
+    e: \mathbb{G}_1 \times \mathbb{G}_2 \rightarrow \mathbb{G}_T
+\]
+where
+\begin{itemize}
+    \item $\mathbb{G}_1$ and $\mathbb{G}_2$ are groups of order $r$ defined
+        over elliptic curves with generator $G_1$ and $G_2$. 
+    \item $\mathbb{G}_T$ is also a group over a \emph{finite field extension}.
+\end{itemize}
+In particular, $\mathbb{G}_1$ is usually defined over curve $E(\FField)$, and
+$\mathbb{G}_2$ and $\mathbb{G}_T$ are defined over $E(\mathbb{F}_{p^k})$
+\HL{TODO: Example with BLS12-381}.
+
+The function $e$ has the following property:
+\begin{enumerate}
+    \item $e(r \times m, n) = r \times e(m, n)$
+    \item $e(m, r \times n) = e(m, r) \times r$
+\end{enumerate}
+
+\HL{Almost certain it is wrong:}\\
+For paring purpose, where operator $\times$ is addition on elliptic curve over finite
+field, we can conclude :
+\begin{description}
+    \item $e(r \times P, d \times Q)$
+    \item $\Longrightarrow r \times e(P, d \times Q)$
+    \item $\Longrightarrow r \times e(P, Q) \times d$
+    \item $\Longrightarrow r \times d \times e(P, Q)$
+    \item $\Longrightarrow e(P, Q)^{rd}$ \HL{something is missing here}
+\end{description}
+
+\subsection{KZG commitment}
+Let $p(x)$ be the polynomial we want to commit
+\begin{enumerate}
+    \item setup secret $\tau$, sample randomly from $\FField$.
+    \item Prove and verifier share $pk = \tau^iG_1$ and $vk = \tau G_2$
+    \item Verifier receive commitment ${cm}_p = \sum_{i=0}p_i \cdot \tau^iG_1$ for
+        $i \in \{1, \ldots, m\}$
+    \item Verifier send requests $open(p, y, z)$: to prove $p(z) = y$.
+    \item Prover compute $q(x) = \frac{p(z) - y}{x-z}$ and send commitment
+        ${cm}_q$.
+    \item Verifier compute $P_z = zG_2$ and $P_y = yG_1$ and check 
+        $e({cm}_q, vk-P_z) = e({cm}_p-P_y, G_2)$.
+\end{enumerate}
+For convince, we write $cm_{p} = \sum_{i=0}p_i \cdot \tau^iG_1 = p(\tau)$, same
+goes for ${cm}_q$.\\
+To see the correctness:
+\[
+\begin{aligned}
+    e({cm}_q, vk-P_z) &= e({cm}_p-P_y, G_2)\\
+    e(\sum_{i=0}q_i \cdot \tau^iG_1, \tau G_2-z G_2) &= e({cm}_p =
+    \sum_{i=0}p_i \cdot \tau^iG_1-yG_1, G_2)\\
+    e(G_1, G_2)^{q(\tau)(\tau - z)} &= e(G_1,G_2)^{p(\tau)-y}\\
+    \mathbb{X}^{q(\tau)(\tau - z)}_{\mathbb{G}_T} &= \mathbb{X}^{q(\tau) - y}_{\mathbb{G}_T}
+\end{aligned}
+\]
+
 \end{document}
