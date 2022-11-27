@@ -814,7 +814,7 @@ field, we can conclude :
 Let $p(x)$ be the polynomial we want to commit
 \begin{enumerate}
     \item setup secret $\tau$, sample randomly from $\FField$.
-    \item Prove and verifier share $pk = \tau^iG_1$ and $vk = \tau G_2$
+    \item Prove and verifier share $G_1$, $G_2$, $pk = \tau^iG_1$ and $vk = \tau G_2$
     \item Verifier receive commitment ${cm}_p = \sum_{i=0}p_i \cdot \tau^iG_1$ for
         $i \in \{1, \ldots, m\}$
     \item Verifier send requests $open(p, y, z)$: to prove $p(z) = y$.
