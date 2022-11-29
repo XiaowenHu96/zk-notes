@@ -373,19 +373,6 @@ not a zero polynomial and $degree(r) \leq (n-1)$. However, we know for
 points $d \in D$, $r(X) = q(X) - p(X) = 0$, which means $degree(r) = n$,
 therefore contridiciton.
 
-\subsection{Generator}
-\HL{Not sure yet how generator is applied in SNARK or how it is produced ---
-How to produce a generator of multiplicative group of order prime?}
-
-\subsection{Polynomial Implementation}
-Just some notes on the notations here. 
-\begin{description}
-    \item \emph{leading coefficient} is the coefficient of the highest degree. It is
-confusing as I interpreted it as the first coefficient (it is the last one).
-    \item The \emph{zerofier} takes a set of domain $D$ where $\forall x \in D$, produce the
-        result polynomial $f(x) = 0$.
-\end{description}
-
 \subsection{FRI}
 \emph{Fast Reed-Solomon IOP of Proximity}.
 
@@ -534,7 +521,51 @@ halves. This also explains in the earlier section why only providing $n$ points
 is enough to calculate polynomial $C$ of degree $2n-2$.
 
 \subsubsection{Inverse of FFT}
-\HL{Is it needed? TBD...}
+Consider again the discrete Fourier Transform problem, which is a linear map from
+$\mathbb{C}^n \rightarrow \mathbb{C}^n$. We can therefore write it as a matrix
+multiplication:
+\[
+\begin{bmatrix}
+    1      & 1              & 1                 & \ldots & 1\\
+    1      & \omega_n       & \omega^2_n        & \ldots & \omega^{n-1}_n \\
+    \vdots & \vdots         & \vdots            & \ddots & \vdots \\
+    1      & \omega^{n-1}_n & \omega^{2(n-1)}_n & \ldots & \omega^{(n-1)^2}_n
+\end{bmatrix}
+\begin{bmatrix} a_0\\ a_1\\ \vdots\\ a_{n-1} \end{bmatrix}
+=
+\begin{bmatrix} \hat{a}_0\\ \hat{a}_1\\ \vdots\\ \hat{a}_{n-1} \end{bmatrix}
+\]
+
+Denote each matrix as $M_n(\omega_n)$, $A_n$ and $\hat{A}_n$ . $M_n(\omega_n)$ has a
+special name in linear algebra, called \emph{Vandermonde Matrix}.
+To get from $\hat{A}_0$ and $M_n(\omega_n)$ to $A_0$, we simply need to find
+the inverse of $M_n(\omega_n)$, which turns out to be very simple.
+
+\begin{lemma}
+    For $n \geq 1$, $M_n(\omega_n)$ is invertible and
+    \[
+        M_n(\omega_n)^{-1} = \frac{1}{n}M_n(\omega^{-1}_n)
+    \]
+\end{lemma}
+
+\emph{Proof:}\\
+The $(i, j)$ entry of $M_n(\omega_n)$ is $(\omega^{i}_n)^j = \omega^{ij}_n$. 
+The entry $(i, j)$ entry of $\frac{{1}}{n}M_n(\omega^{-1}_n)$ is
+$\frac{1}{n}(\omega^{-i}_n)^j = \omega^{-ij}_n$. 
+Hence, the $(i, j)$ entyry of the product of the two matrix is:
+\[
+    \frac{1}{n}\sum^{n-1}_{k=0}\omega^{ik}_n\omega^{-jk}_n = 
+    \frac{1}{n}\sum^{n-1}_{k=0}\omega^{k(i - j)}_n=
+    \frac{1}{n}\sum^{n-1}_{k=0}{(\omega^{(i - j)}_n)}^k
+\]
+if $j = i$, the sum is $n$, so the product evaluate to $1$. If $i \neq j$, the
+sum must be $0$ from Lemma~\ref{summation-lemma}.
+
+\begin{remark}
+    Hence we can calculate $\hat{A} \cdot \frac{1}{n}M_n(\omega^{-1}_n)$ with
+    FFT and get $A$. This enable Interpolation on primitive roots in logarithm
+    time.
+\end{remark}
 
 \subsubsection{Q}
 It seems like as long as $\omega_n$ statistifes that only $\omega^n_n = 1$ we
@@ -834,7 +865,7 @@ To see the correctness:
     e(\sum_{i=0}q_i \cdot \tau^iG_1, \tau G_2-z G_2) &= e({cm}_p =
     \sum_{i=0}p_i \cdot \tau^iG_1-yG_1, G_2)\\
     e(G_1, G_2)^{q(\tau)(\tau - z)} &= e(G_1,G_2)^{p(\tau)-y}\\
-    \mathbb{X}^{q(\tau)(\tau - z)}_{\mathbb{G}_T} &= \mathbb{X}^{q(\tau) - y}_{\mathbb{G}_T}
+    \mathbb{X}^{q(\tau)(\tau - z)}_{\mathbb{G}_T} &= \mathbb{X}^{p(\tau) - y}_{\mathbb{G}_T}
 \end{aligned}
 \]
 
