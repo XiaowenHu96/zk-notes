@@ -877,13 +877,12 @@ Continue from above, now the request is a set of points $open(p, \{y_i\}, \{z_i\
     \item Prover compute $q(x) = \frac{p(x) - I(x)}{Z(x)}$
     \item Note: since $I(x)$ is the interpolation, $p(x) - I(x)$ equals to zero at
         $\{z_i\}$ therefore is divisible by $(x - z_i)$.
-    \item Verifier compute $P_z = zG_2$ and $P_y = yG_1$ and check 
-        $e({cm}_q, vk-P_z) = e({cm}_p-P_y, G_2)$.
     \item Verifier compute $P_z = \sum_i{(\tau - z_i )}\cdot G_2$, $P_y =
         \sum_i{(y_i\cdot\tau^{i}G_1)} = cm_{I}$ \footnote{$P_y$ has to be
         calculated by the verifier, otherwise prover can construct $I$ $P$ $Q$
     to trick the protocol}.
 \end{enumerate}
+Remark here is that only one pairing is needed.
 To see the correctness:
 \[
 \begin{aligned}
