@@ -851,7 +851,7 @@ Let $p(x)$ be the polynomial we want to commit
     \item Verifier receive commitment ${cm}_p = \sum_{i=0}p_i \cdot \tau^iG_1$ for
         $i \in \{1, \ldots, m\}$
     \item Verifier send requests $open(p, y, z)$: to prove $p(z) = y$.
-    \item Prover compute $q(x) = \frac{p(z) - y}{x-z}$ and send commitment
+    \item Prover compute $q(x) = \frac{p(x) - y}{x-z}$ and send commitment
         ${cm}_q$.
     \item Verifier compute $P_z = zG_2$ and $P_y = yG_1$ and check 
         $e({cm}_q, vk-P_z) = e({cm}_p-P_y, G_2)$.
@@ -868,5 +868,33 @@ To see the correctness:
     \mathbb{X}^{q(\tau)(\tau - z)}_{\mathbb{G}_T} &= \mathbb{X}^{p(\tau) - y}_{\mathbb{G}_T}
 \end{aligned}
 \]
+
+\subsubsection{Single Polynomial Multiple Points}
+Continue from above, now the request is a set of points $open(p, \{y_i\}, \{z_i\})$.
+\begin{enumerate}
+    \item Prover interpolate $I(x)$ such that $I(x)$ pass through $\{(z_i, y_i)\}$
+        and $Z(x)$ such that $Z(x)$ is a zerofier on $\{z_i\}$.
+    \item Prover compute $q(x) = \frac{p(x) - I(x)}{Z(x)}$
+    \item Note: since $I(x)$ is the interpolation, $p(x) - I(x)$ equals to zero at
+        $\{z_i\}$ therefore is divisible by $(x - z_i)$.
+    \item Verifier compute $P_z = zG_2$ and $P_y = yG_1$ and check 
+        $e({cm}_q, vk-P_z) = e({cm}_p-P_y, G_2)$.
+    \item Verifier compute $P_z = \sum_i{(\tau - z_i )}\cdot G_2$, $P_y =
+        \sum_i{(y_i\cdot\tau^{i}G_1)} = cm_{I}$ \footnote{$P_y$ has to be
+        calculated by the verifier, otherwise prover can construct $I$ $P$ $Q$
+    to trick the protocol}.
+\end{enumerate}
+To see the correctness:
+\[
+\begin{aligned}
+    e({cm}_q, P_z) &= e({cm}_p-{cm}_I, G_2)\\
+    e(\sum_{i=0}q_i \cdot \tau^iG_1, G_2 \cdot \sum_i{(\tau - z_i)}) 
+                   &= e(\sum_{i=0}(p_i \cdot \tau^iG_1)-
+                   \sum_i{(y_i\cdot\tau^{i}G_1)}, G_2)\\
+    e(G_1, G_2)^{q(\tau)\prod_i{(\tau - z_i)}} &= e(G_1,G_2)^{p(\tau)-I(\tau)}\\
+    \mathbb{X}^{q(\tau)\prod_i{(\tau - z_i)}}_{\mathbb{G}_T} &= \mathbb{X}^{p(\tau)-I(\tau)}_{\mathbb{G}_T}
+\end{aligned}
+\]
+
 
 \end{document}
