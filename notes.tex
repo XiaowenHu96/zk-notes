@@ -17,6 +17,9 @@
 \newcommand{\FFamily}{\mathbb{F}^{(\leq d)}_p[X]}
 \newcommand{\FField}{\mathbb{F}_p}
 \newcommand{\MyOmega}{e^{2\pi ik/n}}
+\newcommand{\GOne}{\mathbb{G}_1}
+\newcommand{\GTwo}{\mathbb{G}_2}
+\newcommand{\GT}{\mathbb{G}_T}
 \newcommand{\HL}[1]{\textcolor{red}{#1}}
 
 \begin{document}
@@ -849,8 +852,7 @@ Let $p(x)$ be the polynomial we want to commit
 \begin{enumerate}
     \item setup secret $\tau$, sample randomly from $\FField$.
     \item Prove and verifier share $G_1$, $G_2$, $pk = \tau^iG_1$ and $vk = \tau G_2$
-    \item Verifier receive commitment ${cm}_p = \sum_{i=0}p_i \cdot \tau^iG_1$ for
-        $i \in \{1, \ldots, m\}$
+    \item Verifier receive commitment ${cm}_p = \sum_{i=0}p_i \cdot \tau^iG_1$ 
     \item Verifier send requests $open(p, y, z)$: to prove $p(z) = y$.
     \item Prover compute $q(x) = \frac{p(x) - y}{x-z}$ and send commitment
         ${cm}_q$.
@@ -880,9 +882,9 @@ Continue from above, now the request is a set of points $open(p, \{y_i\}, \{z_i\
         $\{z_i\}$ therefore is divisible by $(x - z_i)$.
     \item Verifier compute $commit_{\mathbb{G}_2}(Z(x)) =
         cm_{Z_{\mathbb{G}_2}}$, $P_y = \sum_i{(y_i\cdot\tau^{i}G_1)} = cm_{I}$
-        \footnote{Does $P_y$ have to be calculated by the verifier. Can prover
+        \HL{Here for the frist time we have a commitment under $\mathbb{G}_2$. Is it possible to avoid committing on G2?}
+        \footnote{Also, does $P_y$ have to be calculated by the verifier. Can prover
         trick the verifier if they construct $P_y$ instead?}
-        \footnote{Here for the frist time we have a commitment under $\mathbb{G}_2$. Is it possible to avoid committing on G2?}
 \end{enumerate}
 Remark here is that only one pairing is needed.
 To see the correctness:
@@ -896,6 +898,13 @@ To see the correctness:
     \mathbb{X}^{q(\tau)Z(\tau)}_{\mathbb{G}_T} &= \mathbb{X}^{p(\tau)-I(\tau)}_{\mathbb{G}_T}
 \end{aligned}
 \]
+
+\subsubsection{Single Polynomial Multiple Points (But only on $\mathbb{G}_1$)}
+The above method requires committing the zerofier over $\GTwo{}$.
+There is an alternative method which only requires commitment over $\GOne$.
+Which is by treating it as a special case of multiple polynomials with
+multiple points. See below.
+
 
 \subsubsection{Multiple Polynomials Single Point}
 Given we have a set of polynomials = $\{P_i(x)\}$, how to verify 
@@ -922,7 +931,6 @@ Given a set of points $\{z_{i}\}$, where each point correspond to a set of polyn
 $\{P_{ij}(x)\}$, how to prove each point is correctly opened at their
 corresponded polynomials?
 
-We first apply multiple-poly-signle-point method.
 For each point $z_i$, let the expected value be $y_{ij}$.
 Construct $Q_i(X) = \sum_j\frac{P_{ij}(X) - y_{ij}}{X-z_i}$.
 % Observe that when taking $X = z_i$, polynomial would results in zero.
@@ -930,27 +938,23 @@ Construct $Q_i(X) = \sum_j\frac{P_{ij}(X) - y_{ij}}{X-z_i}$.
 Now consider:
 \begin{description}
     \item $Q_i(X) = {\sum_j\frac{P_{ij}(X) - y_ij}{X-z_i}}$
-    \item $\prod_i(x-z_i) Q_i(X) = \sum_{i,j} P_{ij}(X) - y_{ij}$
+    \item $\sum_i(x-z_i) Q_i(X) = \sum_{i,j} P_{ij}(X) - y_{ij}$
 \end{description}
-This is our target in the paring function.\\
-
-\begin{description}
-    \item For each point $z_i$, prover computes $Q_i(X)$ and $cm_{q} = commit(\sum_i
-        Q_i(X))$
-    \item Prover also compute $cm_p = \sum(cm_{p_i})$
-    \item Verifier compute $P_z = G_2 \sum_i(\tau - z_i)$ and $P_y = \sum_i(y_i G_1)$
-\end{description}
+However, I personally failed to construct the left-hand side, where a
+multiplication exists in a summation. PLONK has a nice solution for that.
+Let $a$.
 
 \[
 \begin{aligned}
-    e({cm}_q, P_z) &= e(\sum({cm}_{p_i})-P_y, G_2)\\
-    e(\sum\sum_i Q_i\tau^iG_1, G_2 \sum_i(\tau - z_i)) &=
-    e(\sum({cm}_{p_i})-\sum_i{(y_i G_1)}, G_2)\\
-    e(G_1, \tau G_2)^{\prod Q(\tau) \prod(\tau - z_i)} &= e(\sum\sum_i(p_i\tau^i G_1)
-                            -\sum_i{(y_i G_1)}, G_2)\\
-    e({cm}_q, \tau G_2 - zG_2) &= e(G1\cdot (\sum\sum_i{(p_i\tau^i)} - \sum_i{y_i}), G_2)\\
-    e(G_1, G_2)^{q(\tau)(\tau - z)} &= e(G_1,G_2)^{\sum{(p_i(\tau)-y_i)}}\\
-    \mathbb{X}^{q(\tau)(\tau - z)}_{\mathbb{G}_T} &= \mathbb{X}^{\sum{(p_i(\tau)-y_i)}}_{\mathbb{G}_T}
+    e(\sum{(cm_{P_i} - G_1 y_i)} + \sum{(cm_{Q_i} z_i)}, G_2) &= e(\sum{cm_{Q_i}}, vk)\\
+    e(\sum{(cm_{P_i} - G_1 y_i)} + \sum{(cm_{Q_i} z_i)}, G_2) \cdot e(-\sum{cm_{Q_i}}, vk) &= 1 \\
+    e(\sum{(cm_{P_i} - G_1 y_i)} + \sum{(cm_{Q_i} z_i)} - \tau \cdot \sum{cm_{Q_i}\tau}, G_2) &= 1 \\
+    e(\sum{(cm_{P_i} - G_1 y_i)} + \sum{(cm_{Q_i} (z_i-\tau))}, G_2) &= 1 \\
+    e(\sum{(cm_{P_i} - G_1 y_i)} + \sum{(cm_{Q_i} (z_i-\tau))}, G_2) &= 1 \\
+    e(\sum{(cm_{P_i} - G_1 y_i)} - \sum{(cm_{Q_i} (\tau - z_i))}, G_2) &= 1 \\
+    e(G_1, G_2)^{\sum{(\tau(P_i - y_i) - \tau(Q_i)\tau(x-z))}} &= 1 \\
+    e(G_1, G_2)^0 &= 1\\
 \end{aligned}
 \]
+
 \end{document}
