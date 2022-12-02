@@ -942,7 +942,6 @@ Now consider:
 \end{description}
 However, I personally failed to construct the left-hand side, where a
 multiplication exists in a summation. PLONK has a nice solution for that.
-Let $a$.
 
 \[
 \begin{aligned}
@@ -956,5 +955,71 @@ Let $a$.
     e(G_1, G_2)^0 &= 1\\
 \end{aligned}
 \]
+
+\subsubsection{Permutation Argument}
+Given domain over the generator $D=\{1, \ldots, \omega^{N-1}\}$ and two
+polynomial $F$ and $Q$, how to prove their evaluation over domain $D$, $F(D)$
+and $Q(D)$ are permutation of each other?
+
+Key observation is that, two sets $\{a_i\}$ and $\{b_i\}$ are equal iff (with
+few exceptions) $\prod_i\{a_i + \gamma\} = \prod_i\{b_i + \gamma\}$ for some
+random $\gamma$.
+
+Define sequence $r_i =
+r_{i-1}\frac{F(\omega^{i-1}+\gamma)}{G(\omega^{i-1}+\gamma)}$ 
+and define $r_1 = \frac{F(1)+\gamma}{G(1)+\gamma}$.
+Clearly $r_{n} = \frac{\prod_iF(\omega^{i}) + \gamma}{\prod_iG(\omega^{i}) +
+\gamma} = 1$.
+If prover interpolates the sequence $r$ over domain $D$, we have $R(X)$ where
+$R(\omega^{N-1}) = 1$.
+Therefore, we have to prove
+\begin{enumerate}
+    \item $R(\omega^{N-1}) = 1$.
+    \item $R(X)$ is constructed correctly.
+\end{enumerate}
+We first discuss how to prove $2$.
+
+The prover has to prove, for $i \in D$:
+\[
+R(\omega^i)\cdot(G(\omega^{i}) + \gamma) = R(\omega^{i-1})\cdot (F(\omega^{i}) + \gamma)
+\]
+Note, one cannot directly perform pairing on the above equation,
+since the above equation only holds for $i \in D$.
+And if verifier chooses to perform opening on $i\in D$, then the complexity is
+the same as for the verifier to compute $r$ by itself.
+Therefore, a more clever method:
+
+Observe:
+\[
+R(\omega\cdot X)\cdot(G(\omega\cdot X) + \gamma) - R(X)\cdot (F(\omega\cdot X) + \gamma)
+\]
+is divisible by $T = (x^N - 1)$.
+
+Therefore, we can choose some random sample $z \in F$ and perform openings and
+verify:
+\[
+    \frac{R(z \omega)\cdot ((G(\omega) + \gamma)) - R(z)\cdot(F(\omega z) + \gamma)}{(z^N - 1)} = Q(z)
+\] 
+
+Finally, we discuss a small trick
+on proving the first claim. A usual way of proving $R(\omega^{N - 1})=1$  is by performing a
+single open protocol. But to further push the performance limit, prover can use
+a trick to force the correctness of the claim.
+
+Notice when proving $2$, we need to do open protocol on $R$.
+What if in the protocol, we enforce an implicit rule says that: whenever
+verifier wants to open on $R$, instead of opening on $R$, prover should always
+open on $R'(X) = R(X)(X-\omega^{N-1}) + 1$. Notice how $R'$ is constructed so
+that it \emph{must} have $R'(\omega^{N-1}) = 1$.
+
+Imagine if prover does not follow this rule, then the ill-constructed $R'$ will be
+detected during the process of proving the second claim (point opening will
+fail). And if the prover follow this rule, then the first claim is free.
+Brilliant!
+
+The actual protocol works out the above trick in reverse.
+The prove commits $R$ by committing $R' = \frac{R(X)-1}{X-\omega^{N-1}}$.
+And whenever verifier needs to open a point at $R(z)$, it opens at $R'(z)$ and
+get the result by computing $(R'(z) (z-\omega^{N-1}) + 1)$.
 
 \end{document}
