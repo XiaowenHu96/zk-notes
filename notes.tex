@@ -985,15 +985,16 @@ R(\omega^i)\cdot(G(\omega^{i}) + \gamma) = R(\omega^{i-1})\cdot (F(\omega^{i}) +
 \]
 Note, one cannot directly perform pairing on the above equation,
 since the above equation only holds for $i \in D$.
-And if verifier chooses to perform opening on $i\in D$, then the complexity is
-the same as for the verifier to compute $r$ by itself.
+However verifier can choose to perform opening on every point on $i\in D$. But
+ that contradicts to our purpose of having a fast verification process (we
+ could have just opened on $f$ and $g$ on $i \in D$).
 Therefore, a more clever method:
 
 Observe:
 \[
 R(\omega\cdot X)\cdot(G(\omega\cdot X) + \gamma) - R(X)\cdot (F(\omega\cdot X) + \gamma)
 \]
-is divisible by $T = (x^N - 1)$.
+is divisible by $T = (x^N - 1)$.\HL{I don't see how. Is it obvious?}
 
 Therefore, we can choose some random sample $z \in F$ and perform openings and
 verify:
